@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+README.md
+yeucau.md
+huongdandb.md
+stepbystep.md
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node modules (for services that copy node_modules)
+node_modules
+
+# Certificates (should be provided separately in production)
+reverse-proxy/certs/*.key
+reverse-proxy/certs/*.crt
+

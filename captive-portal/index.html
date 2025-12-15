@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tiNi Free Wi-Fi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 480px;
+      width: 100%;
+      padding: 2rem;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; color: #1a202c; }
+    .subtitle { color: #718096; margin-bottom: 1.5rem; }
+    .campaign { margin: 1rem 0; padding: 1rem; background: #f7fafc; border-radius: 8px; }
+    .campaign h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .btn:hover { background: #5568d3; }
+    .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+    .survey {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: #edf2f7;
+      border-radius: 8px;
+    }
+    .survey h3 { margin-bottom: 1rem; font-size: 1rem; }
+    .survey input, .survey select {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+    }
+    .hidden { display: none; }
+    .loading { text-align: center; color: #718096; }
+    .error { color: #e53e3e; margin: 0.5rem 0; }
+    #lang-selector { font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="text-align: right; margin-bottom: 1rem;">
+      <select id="lang-selector" onchange="changeLanguage(this.value)" style="padding: 0.25rem 0.5rem; border: 1px solid #cbd5e0; border-radius: 4px;">
+        <option value="en">English</option>
+        <option value="vi">Tiếng Việt</option>
+      </select>
+    </div>
+    <h1 data-i18n="welcome">Welcome to tiNi Free Wi-Fi</h1>
+    <p class="subtitle" data-i18n="subtitle">Connect to enjoy free internet access</p>
+
+    <div id="loading" class="loading" data-i18n="loading">Loading...</div>
+    <div id="content" class="hidden">
+      <!-- Survey (first-time only) -->
+      <div id="survey-section" class="survey hidden">
+        <h3 data-i18n="survey-title">Quick Survey (First-time visitors)</h3>
+        <input type="text" id="survey-name" data-i18n-placeholder="survey-name-placeholder" placeholder="Your name (optional)" />
+        <select id="survey-age">
+          <option value="" data-i18n="survey-age-placeholder">Select age range</option>
+          <option value="18-25">18-25</option>
+          <option value="26-35">26-35</option>
+          <option value="36-45">36-45</option>
+          <option value="46+">46+</option>
+        </select>
+        <select id="survey-purpose">
+          <option value="" data-i18n="survey-purpose-placeholder">Visit purpose</option>
+          <option value="shopping" data-i18n="purpose-shopping">Shopping</option>
+          <option value="dining" data-i18n="purpose-dining">Dining</option>
+          <option value="work" data-i18n="purpose-work">Work</option>
+          <option value="other" data-i18n="purpose-other">Other</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; color:#4a5568; margin:0.5rem 0;">
+          <input type="checkbox" id="consent-checkbox" />
+          <span data-i18n="consent-text">I agree to the Privacy Policy</span>
+        </label>
+        <p style="font-size:0.85rem; color:#4a5568; margin-bottom:0.5rem;">
+          <a href="https://tiniworld.com/privacy" target="_blank" rel="noreferrer" data-i18n="privacy-link">View Privacy Policy</a>
+        </p>
+        <button class="btn" onclick="submitSurvey()" data-i18n="submit-survey">Submit Survey</button>
+      </div>
+
+      <!-- Campaigns -->
+      <div id="campaigns-section"></div>
+
+      <!-- Connect Button -->
+      <button id="connect-btn" class="btn" onclick="connect()" data-i18n="connect-btn">Connect to Internet</button>
+      <div id="error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // Use reverse-proxy paths (HTTPS)
+    const API_BASE = '/api';
+    const TRACKING_BASE = '/api/tracking';
+    const CAPTIVE_BASE = '/api/captive';
+    
+    let sessionId = null;
+    let userId = null;
+    let isFirstTime = false;
+    let currentLang = localStorage.getItem('tini_lang') || 'en';
+
+    // i18n translations
+    const translations = {
+      en: {
+        welcome: 'Welcome to tiNi Free Wi-Fi',
+        subtitle: 'Connect to enjoy free internet access',
+        loading: 'Loading...',
+        'survey-title': 'Quick Survey (First-time visitors)',
+        'survey-name-placeholder': 'Your name (optional)',
+        'survey-age-placeholder': 'Select age range',
+        'survey-purpose-placeholder': 'Visit purpose',
+        'purpose-shopping': 'Shopping',
+        'purpose-dining': 'Dining',
+        'purpose-work': 'Work',
+        'purpose-other': 'Other',
+        'submit-survey': 'Submit Survey',
+        'consent-text': 'I agree to the Privacy Policy',
+        'privacy-link': 'View Privacy Policy',
+        'connect-btn': 'Connect to Internet',
+        'no-campaigns': 'No active campaigns at this time.',
+        'thank-you': 'Thank you for your feedback!',
+        'connecting': 'Connecting to internet... Please wait.',
+        'thank-interest': 'Thank you for your interest!',
+        'learn-more': 'Learn More'
+      },
+      vi: {
+        welcome: 'Chào mừng đến với tiNi Free Wi-Fi',
+        subtitle: 'Kết nối để tận hưởng internet miễn phí',
+        loading: 'Đang tải...',
+        'survey-title': 'Khảo sát nhanh (Lần đầu truy cập)',
+        'survey-name-placeholder': 'Tên của bạn (tùy chọn)',
+        'survey-age-placeholder': 'Chọn độ tuổi',
+        'survey-purpose-placeholder': 'Mục đích đến',
+        'purpose-shopping': 'Mua sắm',
+        'purpose-dining': 'Ăn uống',
+        'purpose-work': 'Làm việc',
+        'purpose-other': 'Khác',
+        'submit-survey': 'Gửi khảo sát',
+        'consent-text': 'Tôi đồng ý với Chính sách Quyền riêng tư',
+        'privacy-link': 'Xem Chính sách Quyền riêng tư',
+        'connect-btn': 'Kết nối Internet',
+        'no-campaigns': 'Hiện không có chiến dịch nào đang hoạt động.',
+        'thank-you': 'Cảm ơn bạn đã phản hồi!',
+        'connecting': 'Đang kết nối internet... Vui lòng đợi.',
+        'thank-interest': 'Cảm ơn bạn đã quan tâm!',
+        'learn-more': 'Tìm hiểu thêm'
+      }
+    };
+
+    // i18n functions
+    function t(key) {
+      return translations[currentLang][key] || translations.en[key] || key;
+    }
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('tini_lang', lang);
+      document.documentElement.lang = lang;
+      updateUI();
+    }
+
+    function updateUI() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+          el.placeholder = t(key);
+        } else {
+          el.textContent = t(key);
+        }
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+      });
+      document.querySelectorAll('select option[data-i18n]').forEach(opt => {
+        opt.textContent = t(opt.getAttribute('data-i18n'));
+      });
+      document.getElementById('lang-selector').value = currentLang;
+    }
+
+    // Generate anonymous ID
+    function getAnonId() {
+      let id = localStorage.getItem('tini_anon_id');
+      if (!id) {
+        id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('tini_anon_id', id);
+      }
+      return id;
+    }
+
+    // Detect device type
+    function getDeviceType() {
+      const ua = navigator.userAgent;
+      if (/mobile/i.test(ua)) return 'mobile';
+      if (/tablet/i.test(ua)) return 'tablet';
+      return 'desktop';
+    }
+
+    // Initialize session via /api/captive/start-session (yeucau.md)
+    async function initSession() {
+      try {
+        const anonId = getAnonId();
+        const deviceType = getDeviceType();
+        const apId = new URLSearchParams(window.location.search).get('ap_id') || null;
+        const locationId = new URLSearchParams(window.location.search).get('location') || null;
+
+        const res = await fetch(`${CAPTIVE_BASE}/start-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ap_id: apId,
+            mac_address: anonId,
+            device_type: deviceType,
+            location_id: locationId
+          })
+        });
+
+        const data = await res.json();
+        if (data.session_id) {
+          sessionId = data.session_id;
+          isFirstTime = !!data.survey_required;
+
+          if (isFirstTime) {
+            document.getElementById('survey-section').classList.remove('hidden');
+          }
+
+          const ads = data.ads_list || [];
+          if (ads.length > 0) {
+            displayCampaigns(ads);
+            ads.forEach(a => trackImpression(a.id));
+          } else {
+            loadCampaigns(locationId, deviceType, isFirstTime);
+          }
+        } else {
+          showError('Failed to initialize session');
+        }
+      } catch (e) {
+        showError('Failed to initialize session: ' + e.message);
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+      }
+    }
+
+    // Display campaigns from ads_list
+    function displayCampaigns(adsList) {
+      const container = document.getElementById('campaigns-section');
+      if (!adsList || adsList.length === 0) {
+        container.innerHTML = `<p class="subtitle">${t('no-campaigns')}</p>`;
+        return;
+      }
+      container.innerHTML = adsList.map(ad => `
+        <div class="campaign">
+          <h3>${escapeHtml(ad.name)}</h3>
+          <p>${escapeHtml(ad.content?.text || ad.content || '')}</p>
+          <button class="btn" onclick="trackClick('${ad.id}')" data-i18n="learn-more">Learn More</button>
+        </div>
+      `).join('');
+      updateUI();
+    }
+
+    // Load active campaigns (fallback)
+    async function loadCampaigns(locationId, deviceType, isFirstTime) {
+      try {
+        const params = new URLSearchParams();
+        if (locationId) params.set('locationId', locationId);
+        if (deviceType) params.set('deviceType', deviceType);
+        if (isFirstTime) params.set('isFirstTime', 'true');
+
+        const res = await fetch(`${API_BASE}/campaigns/active?${params}`);
+        const campaigns = await res.json();
+
+        const section = document.getElementById('campaigns-section');
+        if (campaigns.length === 0) {
+          section.innerHTML = `<p class="subtitle">${t('no-campaigns')}</p>`;
+          return;
+        }
+
+        section.innerHTML = campaigns.map(c => `
+          <div class="campaign">
+            <h3>${escapeHtml(c.name)}</h3>
+            <button class="btn" onclick="trackClick('${c.id}')" data-i18n="learn-more">Learn More</button>
+          </div>
+        `).join('');
+        updateUI();
+
+        // Track impressions
+        campaigns.forEach(c => trackImpression(c.id));
+      } catch (e) {
+        console.error('Failed to load campaigns:', e);
+      }
+    }
+
+    // Submit survey via /api/captive/submit-survey (yeucau.md)
+    async function submitSurvey() {
+      if (!sessionId) return;
+      if (!document.getElementById('consent-checkbox').checked) {
+        showError('Please accept the privacy policy');
+        return;
+      }
+
+      const answers = {
+        name: document.getElementById('survey-name').value,
+        age: document.getElementById('survey-age').value,
+        purpose: document.getElementById('survey-purpose').value
+      };
+
+      try {
+        const res = await fetch(`${CAPTIVE_BASE}/submit-survey`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, answers })
+        });
+
+        if (res.ok) {
+          document.getElementById('survey-section').classList.add('hidden');
+          alert(t('thank-you'));
+        } else {
+          showError('Failed to submit survey');
+        }
+      } catch (e) {
+        showError('Error: ' + e.message);
+      }
+    }
+
+    // Track impression via /api/tracking/impression
+    async function trackImpression(campaignId) {
+      try {
+        await fetch(`${TRACKING_BASE}/impression`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId, sessionId })
+        });
+      } catch (e) {
+        console.error('Failed to track impression:', e);
+      }
+    }
+
+    // Track click via /api/tracking/click
+    async function trackClick(campaignId) {
+      try {
+        await fetch(`${TRACKING_BASE}/click`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId, sessionId })
+        });
+        alert(t('thank-interest'));
+      } catch (e) {
+        console.error('Failed to track click:', e);
+      }
+    }
+
+    // Connect to internet
+    function connect() {
+      alert(t('connecting'));
+      // In production, this would redirect to Meraki auth success URL
+      window.location.href = 'https://tiniworld.com/';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize on page load
+    document.getElementById('lang-selector').value = currentLang;
+    document.documentElement.lang = currentLang;
+    updateUI();
+    initSession();
+  </script>
+</body>
+</html>

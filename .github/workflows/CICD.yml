@@ -13,7 +13,7 @@ jobs:
           port: 2222
           username: tranthem
           password: NhoDoi@@099112##
-          script:
+          script: |
             echo "Da SSH vao Windows"
             cmd /c ipconfig /all
       - run: echo "SSH thành công"

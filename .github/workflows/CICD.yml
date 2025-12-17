@@ -12,6 +12,7 @@ jobs:
       - name: SSH into Windows and show ipconfig
         uses: appleboy/ssh-action@v1.0.3
         with:
+          request_pty: true
           host: 14.161.25.81
           port: 2222
           username: tranthem

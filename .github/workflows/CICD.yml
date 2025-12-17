@@ -20,6 +20,8 @@ jobs:
           script: |
             echo Da SSH vao Windows
             cmd /c ipconfig /all
+            powershell -Command "ipconfig /all"
+
 
       - name: Done
         run: echo "SSH thành công"

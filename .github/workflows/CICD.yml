@@ -20,7 +20,7 @@ jobs:
           script: |
             echo Da SSH vao Windows
             cmd /c ipconfig /all
-            powershell -Command "Get-NetIPAddress -AddressFamily IPv4 | Format-Table -AutoSize | Out-String"
+            Get-NetIPAddress -AddressFamily IPv4 | Format-Table -AutoSize
 
 
 

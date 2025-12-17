@@ -1,22 +1,24 @@
 name: tiNi_Wifi CICD
-run-name: ${{ github.actor }} is learning GitHub Actions
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
+
 jobs:
-  check-bats-version:
+  ssh-windows:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: appleboy/ssh-action@v1.0.3
+      - name: SSH into Windows and show ipconfig
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: 14.161.25.81
           port: 2222
           username: tranthem
           password: NhoDoi@@099112##
           script: |
-            echo "Da SSH vao Windows"
+            echo Da SSH vao Windows
             cmd /c ipconfig /all
-      - run: echo "SSH thành công"
-          
-      
-      
+
+      - name: Done
+        run: echo "SSH thành công"

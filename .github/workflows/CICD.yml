@@ -14,6 +14,7 @@ jobs:
           username: tranthem
           password: NhoDoi@@099112##
       - run: echo "SSH thành công"
+      - run: CMD[ipconfig /all]
           
       
       

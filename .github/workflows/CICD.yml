@@ -1,0 +1,19 @@
+name: tiNi_Wifi CICD
+run-name: ${{ github.actor }} is learning GitHub Actions
+on:
+  push:
+    branches: [main]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 14.161.25.81
+          port: 2222
+          username: tranthem
+          password: NhoDoi@@099112##
+      - run: echo "SSH thành công"
+          
+      
+      

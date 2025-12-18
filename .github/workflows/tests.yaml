@@ -1,20 +1,29 @@
-name: Check Code on Update Branch
+name: CI for tiNi Wifi
 
 on:
   push:
     branches:
       - update
+  pull_request:
+    branches:
+      - update
 
 jobs:
-  check-code:
+  validate-docker-compose:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Run code check
-        run: echo "Code đã được kiểm tra thành công"
+      - name: Validate docker-compose file
+        run: docker compose config
 
-      - name: Docker compose build and run
-        run: docker compose up -d --build
+  build-docker-images:
+    runs-on: ubuntu-latest
+    needs: validate-docker-compose
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Build services with Docker Compose
+        run: docker compose build

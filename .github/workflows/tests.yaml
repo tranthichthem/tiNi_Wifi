@@ -15,3 +15,6 @@ jobs:
 
       - name: Run code check
         run: echo "Code đã được kiểm tra thành công"
+
+      - name: Docker compose build and run
+        run: docker compose up -d --build

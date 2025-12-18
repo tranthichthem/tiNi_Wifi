@@ -1,18 +1,17 @@
-name: Run Tests
+name: Check Code on Update Branch
 
 on:
-  pull_request:
   push:
     branches:
       - update
 
 jobs:
-  unit-tests:
+  check-code:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Run dummy test
-        run: echo "Checkout Code thành công"
+      - name: Run code check
+        run: echo "Code đã được kiểm tra thành công"

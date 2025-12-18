@@ -15,4 +15,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run dummy test
-        run: echo "Checkout Code thành công."
+        run: echo "Checkout Code thành công"

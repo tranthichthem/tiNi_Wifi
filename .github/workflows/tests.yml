@@ -1,18 +1,18 @@
-name: "Run Test"
+name: Run Tests
+
 on:
   pull_request:
   push:
     branches:
-    - update
+      - update
+
 jobs:
   unit-tests:
-    name: "ubuntu-latest"
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
+
     steps:
-      - name: "Checkout Code"
+      - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Run dummy test
         run: echo "Checkout Code thành công"
-        
-    
-    
-    

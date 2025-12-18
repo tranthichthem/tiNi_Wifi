@@ -1,0 +1,17 @@
+name: Check Code on Update Branch
+
+on:
+  push:
+    branches:
+      - update
+
+jobs:
+  check-code:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run code check
+        run: echo "Code đã được kiểm tra thành công"

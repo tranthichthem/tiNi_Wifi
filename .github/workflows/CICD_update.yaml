@@ -1,0 +1,38 @@
+name: CI for tiNi_Wifi update_branch
+on:
+    push:
+        branches:
+            - update
+    pull_request:
+        branches:
+            - update
+jobs:
+    check-code:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v4
+
+    validate-docker-compose:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v4
+            - name: Validate docker-compose
+              run: docker compose config
+    build-docker-images:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v4
+            - name: Docker compose build and run
+              run: docker compose up -d --build
+    thong-bao:
+        runs-on: ubuntu-latest
+        needs:
+            - check-code
+            - validate-docker-compose
+            - build-docker-images
+        steps:
+            - name: Thong bao
+              run: echo "CI for tiNi_Wifi update branch da chay thanh cong"

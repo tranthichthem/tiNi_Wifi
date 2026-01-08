@@ -1,0 +1,19 @@
+name: CI for tiNi_Wifi
+on:
+    push:
+        branches:
+            - update
+
+jobs:
+    check-code:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v6
+    validate-docker-compose:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v6
+            - name: Validate docker-compose
+              run: docker compose config

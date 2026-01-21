@@ -1,4 +1,4 @@
-name: CI for tiNi_Wifi
+name: CI for tiNi_Wifi update_branch
 on:
     push:
         branches:
@@ -6,17 +6,49 @@ on:
     pull_request:
         branches:
             - update
-
 jobs:
-    check-code:
+    check:
+        name: Check repository
         runs-on: ubuntu-latest
         steps:
             - name: Checkout source code
-              uses: actions/checkout@v6
-    validate-docker-compose:
+              uses: actions/checkout@v4
+            - name: Check required files
+              run: |
+                test -f docker-compose.yml
+                test -d reverse-proxy
+    validate:
+        name: Validate docker-compose
         runs-on: ubuntu-latest
+        needs: check
         steps:
-            - name: Checkout source code
-              uses: actions/checkout@v6
-            - name: Validate docker-compose
+            - name: Check source code
+              uses: actions/checkout@v4
+            - name: Validate docker-compose config
               run: docker compose config
+    build:
+        name: Build docker images
+        runs-on: ubuntu-latest
+        needs: validate
+        steps:
+            - name: Check source code
+              uses: actions/checkout@v4
+            - name: Create SSL
+              run: |
+                mkdir -p reverse-proxy/certs
+                openssl req -x509 -nodes -days 365 \
+                 -newkey rsa:2048 \
+                 -keyout reverse-proxy/certs/tiNi-Wifi.key \
+                 -out reverse-proxy/certs/tiNi-Wifi.crt \
+                 -subj "/CN=tiNi-Wifi/O=tiNi-Wifi/C=VN" \
+                 -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+            - name: Build docker images
+              run: docker compose build
+
+                
+
+
+
+
+
+

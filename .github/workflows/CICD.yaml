@@ -33,15 +33,20 @@ jobs:
         steps:
             - name: Check source code
               uses: actions/checkout@v4
-            #- name: Create SSL
-              #run: |
-                #mkdir -p reverse-proxy/certs
-                #openssl req -x509 -nodes -days 365 \
-                 #-newkey rsa:2048 \
-                 #-keyout reverse-proxy/certs/tiNi-Wifi.key \
-                 #-out reverse-proxy/certs/tiNi-Wifi.crt \
-                 #-subj "/CN=tiNi-Wifi/O=tiNi-Wifi/C=VN" \
-                 #-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+            - name: Create SSL certificates
+              run: |
+                mkdir -p reverse-proxy/certs
+                openssl req -x509 -nodes -days 365 \
+                  -newkey rsa:2048 \
+                  -keyout reverse-proxy/certs/tiNi-Wifi.key \
+                  -out reverse-proxy/certs/tiNi-Wifi.crt \
+                  -subj "/CN=tiNi-Wifi/O=tiNi-Wifi/C=VN" \
+                  -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
+            - name: Verify certificates created
+              run: |
+                ls -la reverse-proxy/certs/
+                test -f reverse-proxy/certs/tiNi-Wifi.key
+                test -f reverse-proxy/certs/tiNi-Wifi.crt
             - name: Build docker images
               run: docker compose build
 

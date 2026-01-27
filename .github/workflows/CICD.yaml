@@ -49,8 +49,12 @@ jobs:
                 test -f reverse-proxy/certs/tiNi-Wifi.crt
             - name: Build docker images
               run: docker compose build
+            - name: List docker network
+              run: docker network ls -la
+            - name: List docker volume
+              run: docker volume ls -la
             - name: List docker image
-              run: docker image ls -la  
+              run: docker image ls
             - name: List docker container
               run: docker container -la
 

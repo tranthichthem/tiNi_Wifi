@@ -50,13 +50,14 @@ jobs:
             - name: Build docker images
               run: docker compose build
             - name: List docker network
-              run: docker network ls -la
+              run: docker network ls -a
             - name: List docker volume
-              run: docker volume ls -la
+              run: docker volume ls -a
             - name: List docker image
-              run: docker image ls
+              run: docker image ls -a
             - name: List docker container
-              run: docker container -la
+              run: docker container ls -a
+
 
                 
 

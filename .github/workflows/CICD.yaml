@@ -64,9 +64,9 @@ jobs:
                   -keyout reverse-proxy/certs/tiNi-Wifi.key \
                   -out reverse-proxy/certs/tiNi-Wifi.crt \
                   -subj "/CN=tiNi-Wifi/O=tiNi-Wifi/C=VN" \
-                  -addtext "subjectAltName=DNS:localhost,DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
+                  -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
             - name: Start services
               run: docker compose up -d
-              
+
 
    

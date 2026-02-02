@@ -67,6 +67,11 @@ jobs:
                   -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
             - name: Start services
               run: docker compose up -d
+            - name: Waiting for services to be ready
+              run: |
+                echo "waiting for services to start..."
+                sleep 10
+                docker compose ps
 
 
    

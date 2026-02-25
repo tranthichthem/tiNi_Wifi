@@ -69,9 +69,34 @@ jobs:
               run: docker compose up -d
             - name: Waiting for services to be ready
               run: |
-                echo "waiting for services to start..."
+                echo "Waiting for services to start..."
                 sleep 10
                 docker compose ps
-
+            - name: Check services health
+              run: |
+                set -e
+                # Kiểm tra container đã chạy chưa
+                echo "Checking containers status"
+                docker compose ps
+                if ! docker conpose ps | grep -q "Up"; then
+                  echo "Some containers are not running"
+                  exit 1
+                fi
+                echo "All containers are running"
+                # Kiểm tra truy cập các services
+                echo "Checking services accessibility"
+                check_service() {
+                  local name=$1
+                  local url=$2
+                  if curl -f "url" > /dev/null 2>&1; then
+                    echo "$name accessible"
+                  else
+                    echo "$name not accessible"
+                  fi
+                }
+                check_service "reverse-proxy" "http://localhost:80"
+                check_service "captive-protal" "http://localhost:3000"
+                check_service "tracking-service" "http://localhost:3001"
+                
 
    

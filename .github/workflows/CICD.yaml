@@ -86,7 +86,6 @@ jobs:
                 # Kiểm tra truy cập các services
                 echo "Checking services accessibility"
                 check_service() {
-                  sleep 20
                   local name=$1
                   local url=$2
                   if curl -f "$url" > /dev/null 2>&1; then
@@ -98,3 +97,8 @@ jobs:
                 check_service "reverse-proxy" "http://localhost:80"
                 check_service "campaign-api" "http://localhost:3000/health"
                 check_service "tracking-service" "http://localhost:3001/health"
+            - name: Show logs on failure
+              if: failure()
+              run: |
+                echo "Docker Compose Logs"
+                docker compose logs --tail=50

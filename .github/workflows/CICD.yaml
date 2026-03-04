@@ -1,4 +1,5 @@
 name: CI for tiNi_Wifi update_branch
+
 on:
     push:
         branches:
@@ -6,35 +7,44 @@ on:
     pull_request:
         branches:
             - update
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
 jobs:
     check:
-        name: Check repository
+        name: Check repository structure
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout source code
-              uses: actions/checkout@v4
-            - name: Check required files
+            - uses: actions/checkout@v4
+            - name: Validate required files
               run: |
+                set -e
                 test -f docker-compose.yml
                 test -d reverse-proxy
+                echo "Repository structure OK"
     validate:
         name: Validate docker-compose
         runs-on: ubuntu-latest
         needs: check
         steps:
-            - name: Check source code
-              uses: actions/checkout@v4
+            - uses: actions/checkout@v4
             - name: Validate docker-compose config
-              run: docker compose config
+              run: |
+                set -e
+                docker compose config
     build:
         name: Build docker images
         runs-on: ubuntu-latest
         needs: validate
         steps:
-            - name: Check source code
-              uses: actions/checkout@v4
-            - name: Create SSL certificates
+            - uses: actions/checkout@v4
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+            - name: Generate SSL certificates
               run: |
+                set -e
                 mkdir -p reverse-proxy/certs
                 openssl req -x509 -nodes -days 365 \
                   -newkey rsa:2048 \
@@ -42,22 +52,21 @@ jobs:
                   -out reverse-proxy/certs/tiNi-Wifi.crt \
                   -subj "/CN=tiNi-Wifi/O=tiNi-Wifi/C=VN" \
                   -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
-            - name: Verify certificates created
-              run: |
-                ls -la reverse-proxy/certs/
-                test -f reverse-proxy/certs/tiNi-Wifi.key
-                test -f reverse-proxy/certs/tiNi-Wifi.crt
             - name: Build docker images
-              run: docker compose build
+              run: |
+                set -e
+                docker compose build --pull
     test:
-        name: Test services
+        name: Integration test
         runs-on: ubuntu-latest
         needs: build
+        timeout-minutes: 10
         steps:
             - name: Check source code
               uses: actions/checkout@v4
-            - name: Create SSL certificates
+            - name: Generate SSL certificates
               run: |
+                set -e
                 mkdir -p reverse-proxy/certs
                 openssl req -x509 -nodes -days 365 \
                   -newkey rsa:2048 \
@@ -67,38 +76,63 @@ jobs:
                   -addext "subjectAltName=DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1"
             - name: Start services
               run: docker compose up -d
-            - name: Waiting for services to be ready
-              run: |
-                echo "Waiting for services to start..."
-                sleep 10
-                docker compose ps
-            - name: Check services health
+            - name: Wait for services to be healthy
               run: |
                 set -e
-                # Kiểm tra container đã chạy chưa
-                echo "Checking containers status"
-                docker compose ps
-                if ! docker compose ps | grep -q "Up"; then
-                  echo "Some containers are not running"
-                  exit 1
-                fi
-                echo "All containers are running"
-                # Kiểm tra truy cập các services
-                echo "Checking services accessibility"
+                echo "Waiting for containers to be running..."
+                for i in {1..20}; do
+                  RUNNING=$(docker compose ps --services --filter "status=running" | wc -l)
+                  if [ "$RUNNING" -ge 3 ]; then
+                    echo "All services running"
+                    break
+                  fi
+                  echo "Waiting... ($i)"
+                  sleep 5
+                done
+                  if [ "$RUNNING" -lt 3 ]; then
+                    echo "Not all services are running"
+                    docker compose ps
+                    exit 1
+                  fi              
+            - name: Health check endpoints
+              run: |
+                set -e
                 check_service() {
                   local name=$1
                   local url=$2
-                  if curl -f "$url" > /dev/null 2>&1; then
-                    echo "$name accessible"
-                  else
-                    echo "$name not accessible"
-                  fi
+                  echo "Checking $name..."
+                  for i in {1..10}; do
+                    if curl -fs "$url" > /dev/null; then
+                      echo "$name is healthy"
+                      return 0
+                    fi
+                    sleep 3
+                  done
+                  echo "$name failed health check"
+                  exit 1
                 }
+
                 check_service "reverse-proxy" "http://localhost:80"
                 check_service "campaign-api" "http://localhost:3000/health"
                 check_service "tracking-service" "http://localhost:3001/health"
-            - name: Show logs on failure
+            - name: Show logs if failed
               if: failure()
+              run: docker compose logs --tail=100
+   
+            - name: Cleanup
+              if: always()
               run: |
-                echo "Docker Compose Logs"
-                docker compose logs --tail=50
+                docker compose down -v
+                docker system prune -f
+    notify:
+        name: Notify CI result
+        runs-on: ubuntu-latest
+        needs: test
+        if: always()
+        steps:
+            - name: Success notification
+              if: success()
+              run: echo "CI for tiNi_Wifi (update branch) completed successfully"
+            - name: Failure notification
+              if: failure()
+              run: echo "CI for tiNi_Wifi (update branch) failed"

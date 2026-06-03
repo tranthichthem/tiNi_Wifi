@@ -1,4 +1,4 @@
-name: CI for tiNi_Wifi update_branch
+name: CICD for tiNi_Wifi
 
 on:
     push:
